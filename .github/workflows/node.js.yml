@@ -37,5 +37,5 @@ jobs:
       - uses: akhileshns/heroku-deploy@v3.12.12 
         with:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "interview-backend"
+          heroku_app_name: "interivew-backend"
           heroku_email: "nishchay.vns2000@gmail.com"
