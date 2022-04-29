@@ -14,6 +14,7 @@ app.use(cors())
 app.use(express.json());
 app.use(responseHandler)
 
+
 socketconnection(Server);
 
 databaseConfiguration()
