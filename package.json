@@ -2,8 +2,8 @@
   "name": "userservice",
   "version": "1.0.0",
   "engines": {
-   "node": "16.x"
-   },
+    "node": "17.8.0"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
