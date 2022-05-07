@@ -26,7 +26,6 @@ const createSendToken = (user, id, statusCode, req, res) => {
 exports.userAddition = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        console.log(email + password)
         if (!email || !password) { return next(createError(500, 'email or passowrd required')); }
         // add a validator to check if input is actually a email 
         const userFound = await userModel.findOne({ email: email });
@@ -71,6 +70,7 @@ exports.userLogin = async (req, res, next) => {
 }
 
 
+
 exports.protect = async (req, res, next) => {
     try {
         let token;
@@ -80,18 +80,13 @@ exports.protect = async (req, res, next) => {
         ) {
             token = req.headers.authorization.split(' ')[1];
         }
-
         if (!token || token === 'null') {
             return next(
                 createError(401, 'You are not logged in! Please log in to get access.')
             );
         }
-
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log(decoded);
         const currentUser = await userModel.findById(decoded.id);
-
         if (!currentUser) {
             return next(
                 createError(401, 'The user belonging to this token does no longer exist.')

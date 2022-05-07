@@ -14,7 +14,6 @@ const ObjectID = require('mongodb').ObjectID;
  * @return {obj} : created Question. {status, message, data}
  */
 const addQuestion = async (req, res) => {
-    console.log(req.body)
     try {
         let data = new Question({
             ...req.body
