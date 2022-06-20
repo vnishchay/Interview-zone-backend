@@ -9,16 +9,19 @@ const InterviewModel = require('../models/interviewModel')
  */
 const addInterview = async (req, res) => {
     try {
+        
         let data = new interview({
             ...req.body
         });
+        data.idOfHost = req.user; 
+        console.log(data)
         let result = await dbService.createDocument(interview, data);
         return res.ok({ data: result });
     } catch (error) {
         if (error.name === 'ValidationError') {
             return res.validationError({ message: `Invalid Data, Validation Failed at ${error.message}` });
         }
-        if (error.code && error.code == 11000) {
+        if (error.code && error.code == 11000) {P
             return res.isDuplicate();
         }
         return res.failureResponse({ data: error.message });
@@ -40,6 +43,11 @@ const updateinterview = async (req, res) => {
             updatedBy: req.user.id,
             ...req.body,
         };
+
+        if(data.idOfParticipant === 'update') {
+             data.idOfParticipant = req.user ; 
+        }
+        
         let validateRequest = validation.validateParamsWithJoi(
             data,
             interviewSchemaKey.updateSchemaKeys
@@ -63,10 +71,30 @@ const updateinterview = async (req, res) => {
         return res.failureResponse({ data: error.message });
     }
 };
-
 const findInterview = async (req, res) => {
     try {
-        const interview = await InterviewModel.find();
+       
+        const interview = await InterviewModel.find(); 
+        return res.status(200).json({
+            data: interview,
+            status: 'success'
+        })
+    }
+    catch (e) {
+        return res.status(400).json({
+            message: e.message,
+            status: 'fail'
+        })
+    }
+}
+
+
+const findInterviewfilter = async (req, res) => {
+    try {
+        const filter  = req.body ; 
+        console.log(filter)
+        const interview = await InterviewModel.find(filter);
+        console.log(interview); 
         return res.status(200).json({
             data: interview,
             status: 'success'
@@ -84,5 +112,6 @@ const findInterview = async (req, res) => {
 module.exports = {
     addInterview,
     findInterview,
-    updateinterview
+    updateinterview, 
+    findInterviewfilter
 }

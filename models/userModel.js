@@ -50,5 +50,4 @@ schema.methods.CheckPass = async function (
     return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-
 module.exports = mongoose.model("User", schema, 'User Model');

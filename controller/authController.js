@@ -3,11 +3,11 @@ const bcrypt = require("bcryptjs");
 const createError = require('http-errors');
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
-const dotEnv = require("dotenv");
+require("dotenv").config ; 
 const validator = require('validator')
 
 const signToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+    return jwt.sign({ id }, process.env.JWT_SECRET , {
         expiresIn: "24h",
     });
 };
@@ -15,7 +15,8 @@ const signToken = (id) => {
 const createSendToken = (user, id, statusCode, req, res) => {
     const token = signToken(id);
     const name = user.firstName + ' ' + user.lastName;
-    let data = { name, role: user.role };
+    const email = user.email ; 
+    let data = { name, email , role: user.role };
     res.status(statusCode).json({
         statusCode,
         token,
@@ -48,6 +49,7 @@ exports.userAddition = async (req, res, next) => {
 exports.userLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
+        console.log(req.body)
         if (!email || !password) return next(createError(500, 'email or password required'))
 
         if (validator.isEmail(email)) {
@@ -73,6 +75,7 @@ exports.userLogin = async (req, res, next) => {
 
 exports.protect = async (req, res, next) => {
     try {
+
         let token;
         if (
             req.headers.authorization &&
@@ -80,18 +83,28 @@ exports.protect = async (req, res, next) => {
         ) {
             token = req.headers.authorization.split(' ')[1];
         }
+ 
+        console.log(token)
+
         if (!token || token === 'null') {
+
             return next(
                 createError(401, 'You are not logged in! Please log in to get access.')
             );
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        console.log(token)
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET );
+    
         const currentUser = await userModel.findById(decoded.id);
+       
         if (!currentUser) {
             return next(
                 createError(401, 'The user belonging to this token does no longer exist.')
             );
         }
+
         req.user = currentUser._id;
         next();
     } catch (err) {
