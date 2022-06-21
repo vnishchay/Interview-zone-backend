@@ -4,7 +4,6 @@ const createError = require('http-errors');
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 require("dotenv").config ; 
-const validator = require('validator')
 
 const signToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET , {
@@ -24,10 +23,30 @@ const createSendToken = (user, id, statusCode, req, res) => {
     });
 };
 
+exports.checkUsername = async (req, res, next) =>{
+     try {
+         const {username} = req.body ; 
+         if(!username ) return next(createError(500, 'username not found')); 
+         const userfound = await userModel.findOne({username : username }); 
+         if(userfound) {
+             return res.status(400).json({
+                  status :'fail', 
+                  message : 'username already exists'
+             })
+         }
+         return  res.status(200).json({
+                 status : 'success', 
+                 message : 'unique username'
+         })
+     }catch (e) {
+         return next(createError(400, e.message))
+     }
+}
+
 exports.userAddition = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) { return next(createError(500, 'email or passowrd required')); }
+        const { email, password, username, country } = req.body;
+        if (!email || !password || !username ) { return next(createError(500, 'email or passowrd or username required')); }
         // add a validator to check if input is actually a email 
         const userFound = await userModel.findOne({ email: email });
         if (userFound) {
@@ -37,6 +56,8 @@ exports.userAddition = async (req, res, next) => {
         }
         const newUser = await userModel.create({
             email: email,
+            username : username, 
+            country : country, 
             password: password
         })
         createSendToken(newUser, newUser._id, 201, req, res);
@@ -48,24 +69,19 @@ exports.userAddition = async (req, res, next) => {
 
 exports.userLogin = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { username , password } = req.body;
         console.log(req.body)
-        if (!email || !password) return next(createError(500, 'email or password required'))
+        if (!username || !password) return next(createError(500, 'username or password required'))
 
-        if (validator.isEmail(email)) {
-            const user = await userModel.findOne({ email: email }).select('+password');
+            const user = await userModel.findOne({ username : username }).select('+password');
 
             if (user && user.CheckPass(password, user.password)) {
+                
                 createSendToken(user, user._id, 200, req, res);
             } else {
-                return next(createError(400, 'email or passowrd is not correct'))
+                return next(createError(400, 'username or passowrd is not correct'))
             }
-        } else {
-            return res.status(400).json({
-                statusCode: 400,
-                message: 'Invalid Email Found'
-            })
-        }
+        
     } catch (err) {
         return next(new Error(err))
     }
@@ -83,8 +99,8 @@ exports.protect = async (req, res, next) => {
         ) {
             token = req.headers.authorization.split(' ')[1];
         }
- 
-        console.log(token)
+      
+        
 
         if (!token || token === 'null') {
 
@@ -92,11 +108,8 @@ exports.protect = async (req, res, next) => {
                 createError(401, 'You are not logged in! Please log in to get access.')
             );
         }
-
-        console.log(token)
         
         const decoded = jwt.verify(token, process.env.JWT_SECRET );
-    
         const currentUser = await userModel.findById(decoded.id);
        
         if (!currentUser) {

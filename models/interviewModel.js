@@ -24,9 +24,9 @@ const schema = new Schema({
         ref: 'questions'
 
     },
-    idOfHost: {
+    idOfHost : {
         type: Schema.Types.ObjectId,
-        required: false,
+        required: true ,
         ref: 'host'
     },
     idOfParticipant: {

@@ -1,6 +1,7 @@
 const interview = require("../models/interviewModel");
 const dbService = require("../utils/dbService")
 const InterviewModel = require('../models/interviewModel')
+
 /**
  * @description : create document of interview in mongodb collection.
  * @param {obj} req : request including body for creating document.
@@ -9,19 +10,18 @@ const InterviewModel = require('../models/interviewModel')
  */
 const addInterview = async (req, res) => {
     try {
-        
         let data = new interview({
             ...req.body
         });
         data.idOfHost = req.user; 
-        console.log(data)
+       
         let result = await dbService.createDocument(interview, data);
         return res.ok({ data: result });
     } catch (error) {
         if (error.name === 'ValidationError') {
             return res.validationError({ message: `Invalid Data, Validation Failed at ${error.message}` });
         }
-        if (error.code && error.code == 11000) {P
+        if (error.code && error.code == 11000) {
             return res.isDuplicate();
         }
         return res.failureResponse({ data: error.message });
@@ -92,9 +92,9 @@ const findInterview = async (req, res) => {
 const findInterviewfilter = async (req, res) => {
     try {
         const filter  = req.body ; 
-        console.log(filter)
+      
         const interview = await InterviewModel.find(filter);
-        console.log(interview); 
+      
         return res.status(200).json({
             data: interview,
             status: 'success'
@@ -107,6 +107,8 @@ const findInterviewfilter = async (req, res) => {
         })
     }
 }
+
+
 
 
 module.exports = {

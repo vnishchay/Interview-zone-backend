@@ -5,29 +5,47 @@ const schema = new mongoose.Schema({
     username: {
         type: String,
         unique: false,
-        required: false
+        required: true
     },
-    normalName: String,
+    name : {
+        type : String,
+    }, 
     country: {
         type: String,
     },
-    language: String,
     email: {
         type: String,
         unique: true,
         required: true,
     },
-    ratings: Number,
     password: {
         type: String,
         required: true
     },
-    dateOfJoining: {
-        type: String,
-    },
-    numberOfInterviews: {
+    interviews: {
         type: [Schema.Types.ObjectID]
+    }, 
+    ishost : {
+         type : Boolean
+    }, 
+    connections : {
+         type : [Schema.Types.ObjectId]
+    }, 
+    followers : {
+         type : [Schema.Types.ObjectId]
+    },
+    pendingConnections  : {
+         type : [Schema.Types.ObjectId]
+    },
+    interviewRequest : {
+        type : [Schema.Types.ObjectId]    // of user , if accepted, ask to schedule interview in future, and remove from here to intervies  
+    },
+    sentInterviewRequest : {
+        type : [Schema.Types.ObjectID]
     }
+},
+{
+    timestamps : true 
 }
 );
 
