@@ -154,7 +154,7 @@
     "delegates" "^1.0.0"
     "readable-stream" "^3.6.0"
 
-"argon2@^0.28.2":
+"argon2@^0.28.5":
   "integrity" "sha512-kGFCctzc3VWmR1aCOYjNgvoTmVF5uVBUtWlXCKKO54d1K+31zRz45KAcDIqMo2746ozv/52d25nfEekitaXP0w=="
   "resolved" "https://registry.npmjs.org/argon2/-/argon2-0.28.5.tgz"
   "version" "0.28.5"

@@ -40,7 +40,7 @@ const getprofile = async (req, res) => {
         const { id } = req.user;
         const user = await userModel.findById(bson.ObjectID(id));
         return res.status(200).json({
-            user: user,
+            user : user,
             status: '200'
         })
     }
@@ -71,17 +71,19 @@ const findhostprofile = async (req, res)=>{
 
 const findSingleProfileFilter = async (req, res) =>{
         try {
-             const {username} = req.body ; 
+             const {username} = req.body ;  
+             
+             console.log(username)
              if(!username || username === null) return res.status(400).json({
                  status : 'fail', 
                  message : 'username not found'
              })
-             const userFound  = dbService.getSingleDocument(userModel, {username : username })
+             
+             const userFound  = await dbService.getSingleDocument( userModel, {username : username })
              res.status(200).json({
                     status : 'success', 
-                    message : userFound
+                    user : userFound
              })
-             
         }catch (e) {
              res.status(400).json({
                   status : 'fail', 
@@ -117,12 +119,70 @@ const submitInterviewRequest = async(req, res )=>{
 }
 
 
+
+const submitConnectionRequest = async(req, res )=>{
+    try {
+           const {username} = req.body; 
+           const userFound =await userModel.findOne({username : username}) ;
+           if(!userFound || userFound === null ) {
+                return res.status(400).json({
+                        status : 'fail', 
+                        message : 'user not found'
+                })
+           }
+           const _id = userFound._id ; 
+           const user_id = req.user ; 
+           await dbService.findOneAndUpdateDocument(userModel, {_id : _id}, { $push : {connectionRequests : user_id }})
+           await dbService.findOneAndUpdateDocument(userModel, {_id : user_id} ,{$push : { sentConnectionRequests : _id }} )
+           return res.status(200).json({
+                  status : 'success', 
+                })
+
+    }catch (e) {
+         res.status(400).json({
+              status : 'fail', 
+              message : e.message 
+         })
+    }
+}
+
+
+
+const handleFollow = async(req, res )=>{
+    try {
+           const {username} = req.body; 
+           const userFound =await userModel.findOne({username : username}) ;
+           if(!userFound || userFound === null ) {
+                return res.status(400).json({
+                        status : 'fail', 
+                        message : 'user not found'
+                })
+           }
+           const _id = userFound._id ; 
+           const user_id = req.user ; 
+           await dbService.findOneAndUpdateDocument(userModel, {_id : _id}, { $push : {followers : user_id }})
+           await dbService.findOneAndUpdateDocument(userModel, {_id : user_id} ,{$push : { following : _id }} )
+           return res.status(200).json({
+                  status : 'success', 
+                })
+
+    }catch (e) {
+         res.status(400).json({
+              status : 'fail', 
+              message : e.message 
+         })
+    }
+}
+
+
 module.exports = {
      updateprofile, 
      getprofile, 
      findhostprofile, 
      submitInterviewRequest,
-     findSingleProfileFilter
+     findSingleProfileFilter, 
+     submitConnectionRequest,
+     handleFollow
 }
 
 // find peers 

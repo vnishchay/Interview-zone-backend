@@ -1,5 +1,4 @@
 
-const bcrypt = require("bcryptjs");
 const createError = require('http-errors');
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
@@ -73,14 +72,15 @@ exports.userLogin = async (req, res, next) => {
         console.log(req.body)
         if (!username || !password) return next(createError(500, 'username or password required'))
 
-            const user = await userModel.findOne({ username : username }).select('+password');
-
-            if (user && user.CheckPass(password, user.password)) {
-                
+            const user = await userModel.findOne({ username : username });
+            const check = await user.CheckPass(password, user.password); 
+            
+            if (user && check) {
                 createSendToken(user, user._id, 200, req, res);
             } else {
                 return next(createError(400, 'username or passowrd is not correct'))
             }
+
         
     } catch (err) {
         return next(new Error(err))
@@ -91,16 +91,17 @@ exports.userLogin = async (req, res, next) => {
 
 exports.protect = async (req, res, next) => {
     try {
-
         let token;
         if (
             req.headers.authorization &&
             req.headers.authorization.startsWith('Bearer')
         ) {
-            token = req.headers.authorization.split(' ')[1];
+            token =await req.headers.authorization.split(' ')[1];
         }
-      
         
+        console.log("token")
+        console.log(token)
+        console.log("token")
 
         if (!token || token === 'null') {
 

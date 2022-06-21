@@ -338,6 +338,7 @@ const deleteMany = (model, filter, options = {}) => new Promise((resolve, reject
  */
 const getSingleDocument = async (model, filter = {}, options = {}) => {
   let query = model.findOne(filter);
+
   if (options.select) {
     query = query.select(options.select);
   }

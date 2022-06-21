@@ -34,14 +34,20 @@ const schema = new mongoose.Schema({
     followers : {
          type : [Schema.Types.ObjectId]
     },
-    pendingConnections  : {
+    connectionRequests  : {
          type : [Schema.Types.ObjectId]
+    },
+    sentConnectionRequest : {
+        type : [Schema.Types.ObjectId]
     },
     interviewRequest : {
         type : [Schema.Types.ObjectId]    // of user , if accepted, ask to schedule interview in future, and remove from here to intervies  
     },
     sentInterviewRequest : {
-        type : [Schema.Types.ObjectID]
+        type : [Schema.Types.ObjectId]
+    },
+    following : {
+        type : [Schema.Types.ObjectId]
     }
 },
 {
@@ -65,6 +71,7 @@ schema.methods.CheckPass = async function (
     candidatePassword,
     userPassword
 ) {
+    console.log(await bcrypt.compare(candidatePassword, userPassword))
     return await bcrypt.compare(candidatePassword, userPassword);
 };
 
