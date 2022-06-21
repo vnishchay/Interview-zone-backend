@@ -12,5 +12,6 @@ router.route('/user/findSingleProfileWithFilter').post(userController.findSingle
 router.route('/user/interviewRequest').post(userController.submitInterviewRequest)
 router.route('/user/connectionrequest').post(userController.submitConnectionRequest)
 router.route('/user/followrequest').post(userController.handleFollow)
-
+router.route('/user/getUserById').post(userController.getProfileWithId)
+router.route('/user/acceptConnection').post(userController.acceptConnectionRequest)
 module.exports = router
