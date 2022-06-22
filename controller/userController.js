@@ -2,9 +2,8 @@ const userDatabase = require("../models/userModel.js");
 const userModel = require("../models/userModel.js");
 const bson = require('bson') 
 const dbService = require("../utils/dbService");
-const { connections } = require("mongoose");
-
-
+const InterviewModel = require('../models/interviewModel.js')
+const {v4} = require('uuid'); 
 const updateprofile = async (req, res) => {
     try {
         const data = req.body ; 
@@ -144,7 +143,7 @@ const submitInterviewRequest = async(req, res )=>{
 const submitConnectionRequest = async(req, res )=>{
     try {
            const {username} = req.body; 
-           const userFound =await userModel.findOne({username : username}) ;
+           const userFound = await userModel.findOne({username : username}) ;
            if(!userFound || userFound === null ) {
                 return res.status(400).json({
                         status : 'fail', 
@@ -154,11 +153,13 @@ const submitConnectionRequest = async(req, res )=>{
            const _id = userFound._id ; 
            const user_id = req.user ; 
            if(`${_id}` === `${user_id}`){
+            console.log("Same user")
             return res.status(400).json({
                   status : 'fail', 
                    message : 'same user'
             })
-  }
+  }        
+           
            await dbService.findOneAndUpdateDocument(userModel, {_id : _id}, { $push : {connectionRequests : user_id }})
            await dbService.findOneAndUpdateDocument(userModel, {_id : user_id} ,{$push : { sentConnectionRequests : _id }} )
            return res.status(200).json({
@@ -229,32 +230,51 @@ const acceptConnectionRequest = async (req, res)=>{
        try {
            const {id} = req.body ; 
            const user_id = req.user ; 
-           // remove from connection request  from user 1 
-           // remove from sent request from user2 
-           // add to connections of both uer 
-        //    $pull: { results: { $elemMatch: { score: 8 , item: "B" } } }
-           console.log('1')
-           const query = {$pull : { sentConnectionRequest : {$eleMatch : user_id }}}
-           console.log('2')
+           const query = {$pull : { sentConnectionRequest : bson.ObjectID(user_id)}}
            const q =  await dbService.findOneAndUpdateDocument(userModel,{_id : id } ,query)
-           console.log(3); 
-           const query2 = {$pull : { connectionRequests : {$eleMatch : id }}}
-           console.log(4)
+           const query2 = {$pull : { connectionRequests : bson.ObjectID(id) }}
            const q2 =  await dbService.findOneAndUpdateDocument(userModel,{_id : user_id},query2)
-           console.log(5)
-
+           const query3 = {$push : { connections : bson.ObjectID(id) }}
+           const q3 = await dbService.findOneAndUpdateDocument(userModel, {_id : user_id}, query3 )
+           const query4 = {$push : { connections : bson.ObjectID(user_id) }}
+           const q4 = await dbService.findOneAndUpdateDocument(userModel, {_id : id}, query4 )
            return res.status(200).json({
                   status : 'success', 
                   message : 'successfully added connection'
-           })
-           
-         
+           })    
        }catch (e) {
             return res.status(400).json({
                     status : 'fail', 
                     message : e.message
             })
        }
+}
+
+const acceptInterviewRequest = async (req, res)=>{
+    try {
+        const {id} = req.body ; 
+        const user_id = req.user ; 
+        console.log(user_id + " " + id )
+        const query = {$pull : { sentInterviewRequest : bson.ObjectID(user_id)}}
+        const q =  await dbService.findOneAndUpdateDocument(userModel,{_id : id } ,query)
+        const query2 = {$pull : { interviewRequest : bson.ObjectID(id) }}
+        const q2 =  await dbService.findOneAndUpdateDocument(userModel,{_id : user_id},query2)
+        const query3 = {$push : { interviews : bson.ObjectID(id) }}
+        const q3 = await dbService.findOneAndUpdateDocument(userModel, {_id : user_id}, query3 )
+        const query4 = {$push : { interviews : bson.ObjectID(user_id) }}
+        const q4 = await dbService.findOneAndUpdateDocument(userModel, {_id : id}, query4 )
+        const interview_id = v4(); 
+        const q5 = await dbService.createDocument(InterviewModel, {idOfHost : bson.ObjectID(user_id) , idOfParticipant : bson.ObjectID(id), interviewID : interview_id })
+        return res.status(200).json({
+               status : 'success',
+               message : q5 
+        })    
+    }catch (e) {
+         return res.status(400).json({
+                 status : 'fail', 
+                 message : e.message
+         })
+    }
 }
 
 module.exports = {
@@ -266,7 +286,8 @@ module.exports = {
      submitConnectionRequest,
      handleFollow,
      getProfileWithId, 
-     acceptConnectionRequest
+     acceptConnectionRequest, 
+     acceptInterviewRequest
 }
 
 // find peers 

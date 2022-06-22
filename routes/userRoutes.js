@@ -14,4 +14,5 @@ router.route('/user/connectionrequest').post(userController.submitConnectionRequ
 router.route('/user/followrequest').post(userController.handleFollow)
 router.route('/user/getUserById').post(userController.getProfileWithId)
 router.route('/user/acceptConnection').post(userController.acceptConnectionRequest)
+router.route('/user/acceptInterview').post(userController.acceptInterviewRequest)
 module.exports = router

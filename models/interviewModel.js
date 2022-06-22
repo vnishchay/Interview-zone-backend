@@ -36,6 +36,8 @@ const schema = new Schema({
     interviewID: {
         type: String
     }
+}, {
+    timestamps : true
 }
 );
 
