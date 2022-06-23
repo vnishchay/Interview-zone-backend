@@ -111,9 +111,30 @@ const findInterviewfilter = async (req, res) => {
 
 
 
+const findInterviewById= async (req, res) => {
+    try {
+        const {id}  = req.body ; 
+        const interview =await dbService.getSingleDocumentById(InterviewModel,id)
+        return res.status(200).json({
+            data: interview,
+            status: 'success'
+        })
+    }
+    catch (e) {
+        return res.status(400).json({
+            message: e.message,
+            status: 'fail'
+        })
+    }
+}
+
+
+
+
 module.exports = {
     addInterview,
     findInterview,
     updateinterview, 
-    findInterviewfilter
+    findInterviewfilter, 
+    findInterviewById
 }

@@ -69,6 +69,7 @@ const findSingleProfileFilter = async (req, res) => {
             message: 'username not found'
         })
 
+        
         const userFound = await dbService.getSingleDocument(userModel, { username: username })
         res.status(200).json({
             status: 'success',
@@ -283,21 +284,23 @@ const acceptInterviewRequest = async (req, res) => {
         const user_id = req.user;
         let interview_id = null
         let session = null;
+        let host = null ; 
+        let candidate = null ; 
         await mongoose.startSession().then(_session => {
             session = _session;
             session.startTransaction()
             return userModel.findByIdAndUpdate({ _id: id }, { $pull: { sentInterviewRequest: user_id } }, { session: session });
         }).then((res) => {
-
+             console.log(res)
+             candidate : res.username 
             return userModel.findByIdAndUpdate(user_id, { $pull: { interviewRequest: id } }, { session: session })
         }).then((res) => {
-
-            return InterviewModel.create([{ idOfHost: user_id, idOfParticipant: id, interviewID: v4() }], { session: session })
+            host : res.username ;
+            return InterviewModel.create([{ idOfHost: user_id, idOfParticipant: id, interviewID: v4(), hostname : host , candidatename : candidate }], { session: session })
         }).then((res) => {
             interview_id = res[0]._id;
             return userModel.findByIdAndUpdate(id, { $push: { interviews: interview_id } }, { session: session });
         }).then((res) => {
-
             return userModel.findByIdAndUpdate(user_id, { $push: { interviews: interview_id } }, { session: session });
         }).then(() => {
             return session.commitTransaction()

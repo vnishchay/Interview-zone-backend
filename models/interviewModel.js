@@ -29,6 +29,12 @@ const schema = new Schema({
         required: true ,
         ref: 'host'
     },
+    hostname : {
+         type : String
+    }, 
+    candidatename : {
+         type : String
+    }, 
     idOfParticipant: {
         type: Schema.Types.ObjectId,
         ref: 'participant'

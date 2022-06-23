@@ -69,7 +69,7 @@ exports.userAddition = async (req, res, next) => {
 exports.userLogin = async (req, res, next) => {
     try {
         const { username , password } = req.body;
-        console.log(req.body)
+   
         if (!username || !password) return next(createError(500, 'username or password required'))
 
             const user = await userModel.findOne({ username : username });
@@ -99,10 +99,7 @@ exports.protect = async (req, res, next) => {
             token =await req.headers.authorization.split(' ')[1];
         }
         
-        console.log("token")
-        console.log(token)
-        console.log("token")
-
+        
         if (!token || token === 'null') {
 
             return next(
