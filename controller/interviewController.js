@@ -1,6 +1,7 @@
 const interview = require("../models/interviewModel");
 const dbService = require("../utils/dbService");
 const InterviewModel = require("../models/interviewModel");
+const mongoose = require("mongoose");
 
 /**
  * @description : create document of interview in mongodb collection.
@@ -21,10 +22,27 @@ const addInterview = async (req, res) => {
       ...payload,
     });
     // store host as the authenticated user id (prefer id if present)
-    const resolvedUserId =
-      req.user && (req.user.id || req.user._id)
-        ? req.user.id || req.user._id
-        : req.user;
+    // Resolve the authenticated user id into a form acceptable for MongoDB.
+    // Sometimes middleware may attach a Buffer or a mongoose ObjectId; normalize
+    // to either a string or a mongoose ObjectId to avoid casting failures.
+    let resolvedUserId =
+      req.user && (req.user.id || req.user._id) ? req.user.id || req.user._id : req.user;
+
+    // If middleware provided a raw Buffer (12-byte ObjectId buffer), convert to ObjectId
+    if (Buffer.isBuffer(resolvedUserId)) {
+      try {
+        resolvedUserId = mongoose.Types.ObjectId(resolvedUserId);
+      } catch (e) {
+        // fallback to hex string representation
+        resolvedUserId = resolvedUserId.toString("hex");
+      }
+    }
+
+    // If an object with an _id property was provided, extract it
+    if (resolvedUserId && typeof resolvedUserId === "object" && resolvedUserId._id) {
+      resolvedUserId = resolvedUserId._id;
+    }
+
     data.idOfHost = resolvedUserId;
 
     // store hostname from authenticated user when available (keeps server authoritative)
@@ -78,13 +96,21 @@ const updateinterview = async (req, res) => {
     // as the participant for the interview. We must ensure we don't
     // overwrite an already assigned participant.
     let joiningAsParticipant = false;
-    if (data.idOfParticipant === "update") {
+      if (data.idOfParticipant === "update") {
       joiningAsParticipant = true;
       // normalize to user id
-      data.idOfParticipant =
-        req.user && (req.user.id || req.user._id)
-          ? req.user.id || req.user._id
-          : req.user;
+      let participantId = req.user && (req.user.id || req.user._id) ? req.user.id || req.user._id : req.user;
+      if (Buffer.isBuffer(participantId)) {
+        try {
+          participantId = mongoose.Types.ObjectId(participantId);
+        } catch (e) {
+          participantId = participantId.toString("hex");
+        }
+      }
+      if (participantId && typeof participantId === "object" && participantId._id) {
+        participantId = participantId._id;
+      }
+      data.idOfParticipant = participantId;
       // also set candidatename if available on req.user (persist candidate's display name)
       if (req.user && req.user.username) {
         data.candidatename = req.user.username;
