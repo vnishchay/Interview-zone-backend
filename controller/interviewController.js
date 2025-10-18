@@ -128,13 +128,136 @@ const findInterviewById= async (req, res) => {
     }
 }
 
+/**
+ * @description : add a log entry to the interview session
+ * @param {obj} req : request with interviewID, action, userName, details
+ * @param {obj} res : response with updated interview
+ * @return {obj} : updated interview
+ */
+const addSessionLog = async (req, res) => {
+    try {
+        const { interviewID, action, userName, details } = req.body;
+        
+        if (!interviewID || !action || !userName) {
+            return res.status(400).json({
+                message: 'Missing required fields: interviewID, action, userName',
+                status: 'fail'
+            });
+        }
 
+        const logEntry = {
+            timestamp: new Date(),
+            action,
+            userName,
+            details: details || {}
+        };
 
+        const updatedInterview = await InterviewModel.findOneAndUpdate(
+            { interviewID },
+            { $push: { sessionLogs: logEntry } },
+            { new: true }
+        );
+
+        if (!updatedInterview) {
+            return res.status(404).json({
+                message: 'Interview not found',
+                status: 'fail'
+            });
+        }
+
+        console.log(`[SESSION LOG] ${userName} - ${action}:`, details);
+
+        return res.status(200).json({
+            data: updatedInterview,
+            status: 'success',
+            message: 'Log added successfully'
+        });
+    } catch (e) {
+        console.error('[SESSION LOG ERROR]:', e);
+        return res.status(500).json({
+            message: e.message,
+            status: 'fail'
+        });
+    }
+};
+
+/**
+ * @description : update code snapshot in interview
+ * @param {obj} req : request with interviewID, code
+ * @param {obj} res : response with updated interview
+ * @return {obj} : updated interview
+ */
+const updateCodeSnapshot = async (req, res) => {
+    try {
+        const { interviewID, code } = req.body;
+
+        const updatedInterview = await InterviewModel.findOneAndUpdate(
+            { interviewID },
+            { codeSnapshot: code },
+            { new: true }
+        );
+
+        if (!updatedInterview) {
+            return res.status(404).json({
+                message: 'Interview not found',
+                status: 'fail'
+            });
+        }
+
+        return res.status(200).json({
+            data: updatedInterview,
+            status: 'success'
+        });
+    } catch (e) {
+        return res.status(500).json({
+            message: e.message,
+            status: 'fail'
+        });
+    }
+};
+
+/**
+ * @description : save final questions to interview
+ * @param {obj} req : request with interviewID, questions
+ * @param {obj} res : response with updated interview
+ * @return {obj} : updated interview
+ */
+const saveFinalQuestions = async (req, res) => {
+    try {
+        const { interviewID, questions } = req.body;
+
+        const updatedInterview = await InterviewModel.findOneAndUpdate(
+            { interviewID },
+            { finalQuestions: questions },
+            { new: true }
+        );
+
+        if (!updatedInterview) {
+            return res.status(404).json({
+                message: 'Interview not found',
+                status: 'fail'
+            });
+        }
+
+        return res.status(200).json({
+            data: updatedInterview,
+            status: 'success'
+        });
+    } catch (e) {
+        return res.status(500).json({
+            message: e.message,
+            status: 'fail'
+        });
+    }
+};
 
 module.exports = {
     addInterview,
     findInterview,
     updateinterview, 
     findInterviewfilter, 
-    findInterviewById
+    findInterviewById,
+    addSessionLog,
+    updateCodeSnapshot,
+    saveFinalQuestions
 }
