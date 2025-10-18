@@ -21,7 +21,27 @@ const addInterview = async (req, res) => {
       ...payload,
     });
     // store host as the authenticated user id (prefer id if present)
-    data.idOfHost = req.user && req.user.id ? req.user.id : req.user;
+    const resolvedUserId =
+      req.user && (req.user.id || req.user._id)
+        ? req.user.id || req.user._id
+        : req.user;
+    data.idOfHost = resolvedUserId;
+
+    // store hostname from authenticated user when available (keeps server authoritative)
+    if (req.user && req.user.username) {
+      data.hostname = req.user.username;
+    } else if (payload.hostname) {
+      data.hostname = payload.hostname;
+    }
+
+    // Ensure interviewID exists; generate a short unique id if none provided
+    if (!payload.interviewID && !data.interviewID) {
+      data.interviewID = `${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .substr(2, 6)}`;
+    } else if (payload.interviewID) {
+      data.interviewID = payload.interviewID;
+    }
 
     let result = await dbService.createDocument(interview, data);
     return res.ok({ data: result });
@@ -61,8 +81,11 @@ const updateinterview = async (req, res) => {
     if (data.idOfParticipant === "update") {
       joiningAsParticipant = true;
       // normalize to user id
-      data.idOfParticipant = req.user && req.user.id ? req.user.id : req.user;
-      // also set candidatename if available on req.user
+      data.idOfParticipant =
+        req.user && (req.user.id || req.user._id)
+          ? req.user.id || req.user._id
+          : req.user;
+      // also set candidatename if available on req.user (persist candidate's display name)
       if (req.user && req.user.username) {
         data.candidatename = req.user.username;
       }

@@ -11,13 +11,23 @@ const signToken = (id) => {
 
 const createSendToken = (user, id, statusCode, req, res) => {
   const token = signToken(id);
-  const name = user.firstName + " " + user.lastName;
+  const name = (user.firstName || "") + " " + (user.lastName || "");
   const email = user.email;
+  // Include a user object so frontend can populate authState.user with id and username
+  const userPayload = {
+    id: user._id,
+    _id: user._id,
+    username: user.username || name || email,
+    name,
+    email,
+    role: user.role,
+  };
   let data = { name, email, role: user.role };
   res.status(statusCode).json({
     statusCode,
     token,
     data,
+    user: userPayload,
   });
 };
 
