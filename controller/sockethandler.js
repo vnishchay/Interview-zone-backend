@@ -1,8 +1,17 @@
 const socketconnection = (Server) => {
+  // Allow configuring the client origin via environment so backend can accept
+  // socket connections from the correct frontend host in different environments.
+  const clientOrigin =
+    process.env.CLIENT_ORIGIN ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:3000";
+
+  console.log(`[SOCKET] configuring CORS origin: ${clientOrigin}`);
+
   const io = require("socket.io")(Server, {
     cors: {
-      origin: "http://localhost:3000",
-      methods: ["GET, POST"],
+      origin: clientOrigin,
+      methods: ["GET", "POST"],
     },
   });
   const jwt = require("jsonwebtoken");
