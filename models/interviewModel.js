@@ -41,6 +41,31 @@ const schema = new Schema({
     },
     interviewID: {
         type: String
+    },
+    sessionLogs: {
+        type: [{
+            timestamp: { type: Date, default: Date.now },
+            action: { type: String }, // 'join', 'leave', 'video_toggle', 'audio_toggle', 'question_add', 'question_edit', 'question_delete', 'code_edit', 'chat_message'
+            userName: { type: String },
+            details: { type: Schema.Types.Mixed } // Flexible field for any additional data
+        }],
+        default: []
+    },
+    codeSnapshot: {
+        type: String,
+        default: ""
+    },
+    finalQuestions: {
+        type: [{
+            questionTitle: String,
+            questionLevel: String,
+            questionCategory: String,
+            questionExample: String,
+            questionOutput: String,
+            bestSolution: String,
+            addedAt: { type: Date, default: Date.now }
+        }],
+        default: []
     }
 }, {
     timestamps : true

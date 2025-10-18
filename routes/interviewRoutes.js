@@ -12,4 +12,10 @@ router.route('/interview/findbyId').post(interview.findInterviewById);
 // router.route("/interview/get").post(interview.findAllinterview);
 router.route("/interview/create").post(interview.addInterview);
 router.route("/interview/update/:id").patch(interview.updateinterview);
+
+// Session logging routes
+router.route("/interview/log").post(interview.addSessionLog);
+router.route("/interview/code").post(interview.updateCodeSnapshot);
+router.route("/interview/questions").post(interview.saveFinalQuestions);
+
 module.exports = router;
