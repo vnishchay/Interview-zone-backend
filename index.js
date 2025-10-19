@@ -17,10 +17,19 @@ app.use(responseHandler);
 socketconnection(Server);
 
 databaseConfiguration()
-  .then((e) => console.log("Interview Service Connected To Database"))
-  .catch((e) =>
-    console.log("Interview Service Failed To Connect To Database" + e)
-  );
+  .then((e) => {
+    // DB connected
+  })
+  .catch((e) => {
+    try {
+      const { populateErrorTable } = require("./utils/logger");
+      populateErrorTable("error", "Database connection failure", {
+        message: e && e.message ? e.message : String(e),
+      });
+    } catch (err) {
+      // fallback: nothing
+    }
+  });
 
 app.use("/", router);
 
@@ -35,19 +44,9 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Log expected frontend origin for socket connections (set CLIENT_ORIGIN or FRONTEND_URL)
-console.log(
-  `[CONFIG] CLIENT_ORIGIN=${
-    process.env.CLIENT_ORIGIN ||
-    process.env.FRONTEND_URL ||
-    "not-set (default http://localhost:3000)"
-  }; NODE_ENV=${process.env.NODE_ENV || "development"}`
-);
+// startup: avoid noisy logging of environment variables
 
 const PORT = process.env.PORT || 3001;
 Server.listen(PORT, () => {
-  console.log(
-    `Server listening on port ${PORT} (env=${
-      process.env.NODE_ENV || "development"
-    })`
-  );
+  // server started
 });

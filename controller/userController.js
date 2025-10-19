@@ -403,7 +403,7 @@ const acceptInterviewRequest = async (req, res) => {
         );
       })
       .then((res) => {
-        console.log(res);
+        // candidate info retrieved
         candidate = res.username;
         return userModel.findByIdAndUpdate(
           user_id,

@@ -73,7 +73,6 @@ schema.methods.addUsername = async function () {
 };
 
 schema.methods.CheckPass = async function (candidatePassword, userPassword) {
-  console.log(await bcrypt.compare(candidatePassword, userPassword));
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 

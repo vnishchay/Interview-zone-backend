@@ -6,7 +6,7 @@ const socketconnection = (Server) => {
     process.env.FRONTEND_URL ||
     "http://localhost:3000";
 
-  console.log(`[SOCKET] configuring CORS origin: ${clientOrigin}`);
+  const { populateErrorTable } = require("../utils/logger");
 
   const io = require("socket.io")(Server, {
     cors: {
@@ -18,7 +18,7 @@ const socketconnection = (Server) => {
   const userModel = require("../models/userModel");
 
   io.on("connection", (socket) => {
-    console.log("Socket connection established ");
+    // connection established (debug logs removed per requested replacement)
     socket.on("get-document", (documentID) => {
       const data = "";
       socket.join(documentID);
@@ -58,25 +58,23 @@ const socketconnection = (Server) => {
           }
         }
       } catch (e) {
-        console.error(
-          "[SOCKET] Could not resolve authenticated username from token:",
-          e.message || e
+        // Persist unexpected errors
+        populateErrorTable(
+          "error",
+          "[SOCKET] Could not resolve authenticated username from token",
+          { message: e && e.message ? e.message : e }
         );
         // fall back to client-provided userName
       }
 
-      console.log(
-        `[SOCKET] User ${socket.id} (${
-          serverUserName || clientUserName
-        }) joining room: ${roomId}`
-      );
+      // user joining room (debug log removed)
       socket.join(roomId);
 
       // Get current room info
       const room = io.sockets.adapter.rooms.get(roomId);
       const userCount = room ? room.size : 1;
 
-      console.log(`[SOCKET] Room ${roomId} now has ${userCount} user(s)`);
+      // room user count (debug log removed)
 
       // Send room info to the joining user
       socket.emit("room-info", {
@@ -93,11 +91,7 @@ const socketconnection = (Server) => {
 
       // Handle disconnect
       socket.on("disconnect", () => {
-        console.log(
-          `[SOCKET] User ${socket.id} (${
-            serverUserName || clientUserName
-          }) disconnected from room ${roomId}`
-        );
+        // user disconnected (debug log removed)
         socket.to(roomId).emit("user-left", {
           userId: socket.id,
           userName: serverUserName || clientUserName || null,
@@ -107,9 +101,7 @@ const socketconnection = (Server) => {
 
     // WebRTC signaling - completely independent of room joining
     socket.on("offer", async (data) => {
-      console.log(
-        `[SOCKET] WebRTC offer from ${socket.id} to room ${data.roomId}`
-      );
+      // WebRTC offer (debug log removed)
       // Try to resolve server username similar to join handling
       let offerUserName = data.userName || null;
       try {
@@ -139,7 +131,7 @@ const socketconnection = (Server) => {
     });
 
     socket.on("answer", (data) => {
-      console.log(`[SOCKET] WebRTC answer from ${socket.id} to ${data.to}`);
+      // WebRTC answer (debug log removed)
       io.to(data.to).emit("answer", {
         signal: data.signal,
         from: socket.id,
@@ -147,7 +139,7 @@ const socketconnection = (Server) => {
     });
 
     socket.on("ice-candidate", (data) => {
-      console.log(`[SOCKET] ICE candidate from ${socket.id} to ${data.to}`);
+      // ICE candidate (debug log removed)
       io.to(data.to).emit("ice-candidate", {
         candidate: data.candidate,
         from: socket.id,
@@ -162,7 +154,9 @@ const socketconnection = (Server) => {
           socket.to(roomId).emit("toggle-editor", { enabled });
         }
       } catch (e) {
-        console.error("[SOCKET] toggle-editor error:", e.message || e);
+        populateErrorTable("error", "toggle-editor error", {
+          message: e && e.message ? e.message : e,
+        });
       }
     });
 
@@ -173,7 +167,9 @@ const socketconnection = (Server) => {
           socket.to(roomId).emit("toggle-questions", { enabled });
         }
       } catch (e) {
-        console.error("[SOCKET] toggle-questions error:", e.message || e);
+        populateErrorTable("error", "toggle-questions error", {
+          message: e && e.message ? e.message : e,
+        });
       }
     });
   });
