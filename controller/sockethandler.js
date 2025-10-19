@@ -67,10 +67,32 @@ const socketconnection = (Server) => {
         // fall back to client-provided userName
       }
 
+      // Check current room occupancy BEFORE allowing the join. Limit to 4
+      // participants to enforce the requirement that multiple people can
+      // join but cap the room size.
+      const existingRoom = io.sockets.adapter.rooms.get(roomId);
+      const currentCount = existingRoom ? existingRoom.size : 0;
+      const MAX_PARTICIPANTS = 4;
+
+      if (currentCount >= MAX_PARTICIPANTS) {
+        // Inform the joining client that the room is full and do not join
+        socket.emit("room-full", {
+          roomId: roomId,
+          userCount: currentCount,
+          message: `Room is full (max ${MAX_PARTICIPANTS} participants)`,
+        });
+        return;
+      }
+
+      // Determine existing members before joining so the joining client can
+      // initiate direct offers to them. We compute this list before calling
+      // socket.join so it represents the pre-join occupants.
+      const existingIds = existingRoom ? Array.from(existingRoom) : [];
+
       // user joining room (debug log removed)
       socket.join(roomId);
 
-      // Get current room info
+      // Get current room info after join
       const room = io.sockets.adapter.rooms.get(roomId);
       const userCount = room ? room.size : 1;
 
@@ -81,6 +103,7 @@ const socketconnection = (Server) => {
         userCount: userCount,
         roomId: roomId,
         userName: serverUserName || clientUserName || null,
+        existingMembers: existingIds,
       });
 
       // Notify others in the room that someone joined
@@ -143,11 +166,22 @@ const socketconnection = (Server) => {
       } catch (e) {
         // ignore and use client provided name
       }
-      socket.to(data.roomId).emit("offer", {
-        signal: data.signal,
-        from: socket.id,
-        userName: offerUserName,
-      });
+      // If a specific recipient is requested, send directly to that socket id.
+      // This reduces unnecessary broadcast traffic when the joining client
+      // targets existing members individually.
+      if (data && data.to) {
+        io.to(data.to).emit("offer", {
+          signal: data.signal,
+          from: socket.id,
+          userName: offerUserName,
+        });
+      } else {
+        socket.to(data.roomId).emit("offer", {
+          signal: data.signal,
+          from: socket.id,
+          userName: offerUserName,
+        });
+      }
     });
 
     socket.on("answer", (data) => {
