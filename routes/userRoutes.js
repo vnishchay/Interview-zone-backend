@@ -15,6 +15,8 @@ router
 router.use(authController.protect);
 router.route("/user/profile").get(userController.getprofile);
 router.route("/user/profile").put(userController.updateprofile);
+// update tags for current user
+router.route('/user/profile/tags').put(userController.updateTags);
 router
   .route("/user/interviewRequest")
   .post(userController.submitInterviewRequest);

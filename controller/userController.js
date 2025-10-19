@@ -476,6 +476,40 @@ const acceptInterviewRequest = async (req, res) => {
   }
 };
 
+// Add updateTags function to allow users to update their tags
+const updateTags = async (req, res) => {
+  try {
+    const userId = req.user;
+    const { tags } = req.body;
+    if (!Array.isArray(tags)) {
+      return res
+        .status(400)
+        .json({ message: "tags must be an array of tag keys" });
+    }
+    // Sanitize: only strings, trimmed, unique
+    const normalized = Array.from(
+      new Set(
+        tags
+          .filter((t) => typeof t === "string")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    );
+    const updated = await userModel.findByIdAndUpdate(
+      userId,
+      { $set: { tags: normalized } },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ data: updated });
+  } catch (err) {
+    console.error("updateTags error", err);
+    return res.status(500).json({ message: "internal error" });
+  }
+};
+
 module.exports = {
   updateprofile,
   getprofile,
@@ -489,4 +523,5 @@ module.exports = {
   acceptConnectionRequest,
   acceptInterviewRequest,
   deleteConnectionRequest,
+  updateTags,
 };
