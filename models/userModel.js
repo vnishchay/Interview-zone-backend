@@ -55,6 +55,12 @@ const schema = new mongoose.Schema(
     following: {
       type: [Schema.Types.ObjectId],
     },
+      // tags for interviewer niches / categories. Stored as array of strings
+      // (tag keys). This keeps queries simple and avoids expensive joins.
+      tags: {
+        type: [String],
+        default: [],
+      },
   },
   {
     timestamps: true,
