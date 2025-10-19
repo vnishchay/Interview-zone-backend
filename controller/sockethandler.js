@@ -97,6 +97,26 @@ const socketconnection = (Server) => {
           userName: serverUserName || clientUserName || null,
         });
       });
+
+      // Allow clients to explicitly leave a room (e.g., 'Leave' button) without
+      // tearing down the entire socket connection. Broadcast a 'user-left' event
+      // to other occupants so they can cleanup immediately.
+      socket.on("leave-room", (data) => {
+        try {
+          const { roomId } = data || {};
+          if (roomId) {
+            socket.to(roomId).emit("user-left", {
+              userId: socket.id,
+              userName: serverUserName || clientUserName || null,
+            });
+            socket.leave(roomId);
+          }
+        } catch (e) {
+          populateErrorTable("error", "leave-room error", {
+            message: e && e.message ? e.message : e,
+          });
+        }
+      });
     });
 
     // WebRTC signaling - completely independent of room joining

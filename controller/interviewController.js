@@ -69,6 +69,17 @@ const addInterview = async (req, res) => {
       data.interviewID = payload.interviewID;
     }
 
+    // record startTime: allow caller to set it (ISO string) or default to now
+    if (payload.startTime) {
+      try {
+        data.startTime = new Date(payload.startTime);
+      } catch (e) {
+        data.startTime = new Date();
+      }
+    } else {
+      data.startTime = new Date();
+    }
+
     let result = await dbService.createDocument(interview, data);
     return res.ok({ data: result });
   } catch (error) {
@@ -168,7 +179,24 @@ const updateinterview = async (req, res) => {
     let result = await dbService.findOneAndUpdateDocument(
       interview,
       query,
-      data,
+      // If caller provided an endTime or requested archive, normalize and mark archived
+      (() => {
+        const normalized = { ...data };
+        if (data.endTime) {
+          try {
+            normalized.endTime = new Date(data.endTime);
+          } catch (e) {
+            normalized.endTime = new Date();
+          }
+          normalized.archived = true;
+          normalized.archivedAt = new Date();
+        }
+        if (data.archived && !normalized.archivedAt) {
+          normalized.archived = true;
+          normalized.archivedAt = new Date();
+        }
+        return normalized;
+      })(),
       { new: true }
     );
     if (!result) {
