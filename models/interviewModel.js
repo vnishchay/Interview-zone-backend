@@ -102,3 +102,9 @@ schema.method("toJSON", function () {
 const InterviewModel = mongoose.model("interview", schema);
 
 module.exports = InterviewModel;
+
+// Ensure interviewID is unique to avoid accidental duplicate interview docs
+schema.index(
+  { interviewID: 1 },
+  { unique: true, sparse: true, background: true }
+);

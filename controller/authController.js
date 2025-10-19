@@ -70,16 +70,26 @@ exports.userAddition = async (req, res, next) => {
         message: "Email already exists",
       });
     }
-    const newUser = await userModel.create({
-      email: email,
-      username: username,
-      country: country,
-      password: password,
-    });
-  // new user created
-    createSendToken(newUser, newUser._id, 201, req, res);
-  // response sent
-    return res;
+    try {
+      const newUser = await userModel.create({
+        email: email,
+        username: username,
+        country: country,
+        password: password,
+      });
+      // new user created
+      createSendToken(newUser, newUser._id, 201, req, res);
+      return;
+    } catch (createErr) {
+      // Handle duplicate key error (E11000) gracefully
+      if (createErr && createErr.code && createErr.code === 11000) {
+        return res.status(409).json({
+          status: "fail",
+          message: "A user with provided email or username already exists",
+        });
+      }
+      throw createErr;
+    }
   } catch (err) {
     const { populateErrorTable } = require("../utils/logger");
     populateErrorTable("error", "[REGISTER] Error", {

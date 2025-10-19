@@ -5,7 +5,7 @@ const schema = new mongoose.Schema(
   {
     username: {
       type: String,
-      unique: false,
+      unique: true,
       required: true,
     },
     name: {
@@ -76,4 +76,12 @@ schema.methods.CheckPass = async function (candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-module.exports = mongoose.model("User", schema, "User Model");
+// Ensure indexes are created for uniqueness. Note: if your database already
+// contains duplicate documents for `email` or `username`, index creation will
+// fail. Clean duplicates before enabling automatic index creation in production.
+schema.index({ email: 1 }, { unique: true, background: true });
+schema.index({ username: 1 }, { unique: true, sparse: true, background: true });
+
+const User = mongoose.model("User", schema, "User Model");
+
+module.exports = User;

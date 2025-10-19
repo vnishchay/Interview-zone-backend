@@ -391,65 +391,83 @@ const acceptInterviewRequest = async (req, res) => {
     let host = null;
     let candidate = null;
 
-    await mongoose
-      .startSession()
-      .then((_session) => {
-        session = _session;
-        session.startTransaction();
-        return userModel.findByIdAndUpdate(
-          { _id: id },
-          { $pull: { sentInterviewRequest: user_id } },
-          { session: session }
+    session = await mongoose.startSession();
+    try {
+      session.startTransaction();
+
+      // remove pending requests first
+      const candidateUpdate = await userModel.findByIdAndUpdate(
+        id,
+        { $pull: { sentInterviewRequest: user_id } },
+        { session }
+      );
+      candidate = candidateUpdate && candidateUpdate.username;
+
+      await userModel.findByIdAndUpdate(
+        user_id,
+        { $pull: { interviewRequest: id } },
+        { session }
+      );
+
+      // Check if an interview between these two users already exists (and is not archived)
+      const existingInterview = await InterviewModel.findOne({
+        $or: [
+          { idOfHost: user_id, idOfParticipant: id },
+          { idOfHost: id, idOfParticipant: user_id },
+        ],
+        archived: { $ne: true },
+      }).session(session);
+
+      if (existingInterview) {
+        // ensure both users reference the interview (in case previous run did part of the work)
+        interview_id = existingInterview._id;
+        await userModel.findByIdAndUpdate(
+          id,
+          { $addToSet: { interviews: interview_id } },
+          { session }
         );
-      })
-      .then((res) => {
-        // candidate info retrieved
-        candidate = res.username;
-        return userModel.findByIdAndUpdate(
+        await userModel.findByIdAndUpdate(
           user_id,
-          { $pull: { interviewRequest: id } },
-          { session: session }
+          { $addToSet: { interviews: interview_id } },
+          { session }
         );
-      })
-      .then((res) => {
-        host = res.username;
-        return InterviewModel.create(
+      } else {
+        // create new interview
+        const created = await InterviewModel.create(
           [
             {
               idOfHost: user_id,
               idOfParticipant: id,
               interviewID: v4(),
-              hostname: host,
+              hostname:
+                user_id && user_id.username ? user_id.username : undefined,
               candidatename: candidate,
             },
           ],
-          { session: session }
+          { session }
         );
-      })
-      .then((res) => {
-        interview_id = res[0]._id;
-        return userModel.findByIdAndUpdate(
+        interview_id = created[0]._id;
+
+        await userModel.findByIdAndUpdate(
           id,
           { $push: { interviews: interview_id } },
-          { session: session }
+          { session }
         );
-      })
-      .then((res) => {
-        return userModel.findByIdAndUpdate(
+        await userModel.findByIdAndUpdate(
           user_id,
           { $push: { interviews: interview_id } },
-          { session: session }
+          { session }
         );
-      })
-      .then(() => {
-        return session.commitTransaction();
-      })
-      .then(() => {
-        session.endSession();
-        return res.status(200).json({
-          status: "success",
-        });
-      });
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+      return res.status(200).json({ status: "success" });
+    } catch (e) {
+      await session.abortTransaction();
+      session.endSession();
+      throw e;
+    }
   } catch (e) {
     return res.status(400).json({
       status: "fail",
