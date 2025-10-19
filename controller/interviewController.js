@@ -2,6 +2,8 @@ const interview = require("../models/interviewModel");
 const dbService = require("../utils/dbService");
 const InterviewModel = require("../models/interviewModel");
 const mongoose = require("mongoose");
+// top-level DB-backed error persister
+const { populateErrorTable } = require("../utils/logger");
 
 /**
  * @description : create document of interview in mongodb collection.
@@ -26,7 +28,9 @@ const addInterview = async (req, res) => {
     // Sometimes middleware may attach a Buffer or a mongoose ObjectId; normalize
     // to either a string or a mongoose ObjectId to avoid casting failures.
     let resolvedUserId =
-      req.user && (req.user.id || req.user._id) ? req.user.id || req.user._id : req.user;
+      req.user && (req.user.id || req.user._id)
+        ? req.user.id || req.user._id
+        : req.user;
 
     // If middleware provided a raw Buffer (12-byte ObjectId buffer), convert to ObjectId
     if (Buffer.isBuffer(resolvedUserId)) {
@@ -39,7 +43,11 @@ const addInterview = async (req, res) => {
     }
 
     // If an object with an _id property was provided, extract it
-    if (resolvedUserId && typeof resolvedUserId === "object" && resolvedUserId._id) {
+    if (
+      resolvedUserId &&
+      typeof resolvedUserId === "object" &&
+      resolvedUserId._id
+    ) {
       resolvedUserId = resolvedUserId._id;
     }
 
@@ -96,10 +104,13 @@ const updateinterview = async (req, res) => {
     // as the participant for the interview. We must ensure we don't
     // overwrite an already assigned participant.
     let joiningAsParticipant = false;
-      if (data.idOfParticipant === "update") {
+    if (data.idOfParticipant === "update") {
       joiningAsParticipant = true;
       // normalize to user id
-      let participantId = req.user && (req.user.id || req.user._id) ? req.user.id || req.user._id : req.user;
+      let participantId =
+        req.user && (req.user.id || req.user._id)
+          ? req.user.id || req.user._id
+          : req.user;
       if (Buffer.isBuffer(participantId)) {
         try {
           participantId = mongoose.Types.ObjectId(participantId);
@@ -107,7 +118,11 @@ const updateinterview = async (req, res) => {
           participantId = participantId.toString("hex");
         }
       }
-      if (participantId && typeof participantId === "object" && participantId._id) {
+      if (
+        participantId &&
+        typeof participantId === "object" &&
+        participantId._id
+      ) {
         participantId = participantId._id;
       }
       data.idOfParticipant = participantId;
@@ -257,7 +272,7 @@ const addSessionLog = async (req, res) => {
       });
     }
 
-    console.log(`[SESSION LOG] ${userName} - ${action}:`, details);
+    // Session log added (info/debug logs removed per requested replacement)
 
     return res.status(200).json({
       data: updatedInterview,
@@ -265,7 +280,11 @@ const addSessionLog = async (req, res) => {
       message: "Log added successfully",
     });
   } catch (e) {
-    console.error("[SESSION LOG ERROR]:", e);
+    const { populateErrorTable } = require("../utils/logger");
+    populateErrorTable("error", "Session log error", {
+      message: e && e.message ? e.message : e,
+      stack: e && e.stack ? e.stack : undefined,
+    });
     return res.status(500).json({
       message: e.message,
       status: "fail",

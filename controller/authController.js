@@ -31,6 +31,9 @@ const createSendToken = (user, id, statusCode, req, res) => {
   });
 };
 
+// provide a top-level reference to the DB-backed error persister
+const { populateErrorTable } = require("../utils/logger");
+
 exports.checkUsername = async (req, res, next) => {
   try {
     const { username } = req.body;
@@ -53,38 +56,36 @@ exports.checkUsername = async (req, res, next) => {
 
 exports.userAddition = async (req, res, next) => {
   try {
-    console.log("[REGISTER] Incoming request body:", req.body);
+  // remove noisy request-body log
     const { email, password, username, country } = req.body;
     if (!email || !password || !username) {
-      console.log("[REGISTER] Missing required fields:", {
-        email,
-        password,
-        username,
-      });
+      // missing required fields - avoid verbose logging
       return next(createError(500, "email or passowrd or username required"));
     }
     // add a validator to check if input is actually a email
     const userFound = await userModel.findOne({ email: email });
     if (userFound) {
-      console.log("[REGISTER] Email already exists:", email);
       return res.status(400).json({
         status: "fail",
         message: "Email already exists",
       });
     }
-    console.log("[REGISTER] Creating new user:", { email, username, country });
     const newUser = await userModel.create({
       email: email,
       username: username,
       country: country,
       password: password,
     });
-    console.log("[REGISTER] New user created:", newUser._id);
+  // new user created
     createSendToken(newUser, newUser._id, 201, req, res);
-    console.log(res);
+  // response sent
     return res;
   } catch (err) {
-    console.error("[REGISTER] Error:", err);
+    const { populateErrorTable } = require("../utils/logger");
+    populateErrorTable("error", "[REGISTER] Error", {
+      message: err && err.message ? err.message : err,
+      stack: err && err.stack ? err.stack : undefined,
+    });
     return next(createError(400, err.message));
   }
 };
@@ -93,7 +94,7 @@ exports.userLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    console.log("[LOGIN] Attempting login with email:", email);
+  // login attempt
 
     if (!email || !password) {
       return next(createError(500, "email or password required"));
@@ -101,22 +102,22 @@ exports.userLogin = async (req, res, next) => {
 
     const user = await userModel.findOne({ email: email });
     if (!user) {
-      console.log("[LOGIN] User not found with email:", email);
       return next(createError(400, "email or password is not correct"));
     }
-
-    console.log("[LOGIN] User found, checking password...");
+    // check password
     const check = await user.CheckPass(password, user.password);
 
     if (check) {
-      console.log("[LOGIN] Password verified, sending token...");
       createSendToken(user, user._id, 200, req, res);
     } else {
-      console.log("[LOGIN] Password verification failed");
       return next(createError(400, "email or password is not correct"));
     }
   } catch (err) {
-    console.error("[LOGIN] Error:", err);
+    const { populateErrorTable } = require("../utils/logger");
+    populateErrorTable("error", "[LOGIN] Error", {
+      message: err && err.message ? err.message : err,
+      stack: err && err.stack ? err.stack : undefined,
+    });
     return next(new Error(err));
   }
 };

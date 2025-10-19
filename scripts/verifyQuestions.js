@@ -5,11 +5,17 @@
 const axios = require("axios");
 
 const BASE = process.env.BACKEND_URL || "http://localhost:3001";
+let populateErrorTable = null;
+try {
+  populateErrorTable = require("../utils/logger").populateErrorTable;
+} catch (e) {
+  // script may be run standalone without full project context; fallback to null
+  populateErrorTable = null;
+}
 
 async function run() {
   try {
-    const interviewID = process.argv[2] || "test-interview-verify";
-    console.log("Using interviewID:", interviewID);
+  const interviewID = process.argv[2] || "test-interview-verify";
 
     const sampleQuestions = [
       {
@@ -21,33 +27,49 @@ async function run() {
       },
     ];
 
-    console.log("Posting finalQuestions to /interview/questions");
+  // posting finalQuestions to /interview/questions
     const res = await axios.post(`${BASE}/interview/questions`, {
       interviewID,
       questions: sampleQuestions,
     });
 
-    console.log("Save response:", res.data);
+  // save response received
 
-    console.log("Fetching interview by filter to verify finalQuestions...");
+  // fetching interview to verify finalQuestions
     const fetchRes = await axios.post(`${BASE}/interview/findInterviewfilter`, {
       interviewID,
     });
-    console.log("Fetch response:", fetchRes.data);
+  // fetch response received
 
     if (fetchRes.data && fetchRes.data.data && fetchRes.data.data.length) {
       const interview = fetchRes.data.data[0];
       const stored = interview.finalQuestions || [];
-      console.log("Stored finalQuestions length:", stored.length);
-      console.log("Stored finalQuestions:", stored);
+      // stored finalQuestions available
       process.exit(0);
     } else {
-      console.error("Interview not found or no data returned.");
+      // Use logger if available (when run within project), otherwise fallback to console
+      try {
+        const { populateErrorTable } = require("../utils/logger");
+        populateErrorTable(
+          "error",
+          "Interview not found or no data returned.",
+          {}
+        );
+      } catch (e) {
+        // no logger available; exit with error
+      }
       process.exit(2);
     }
   } catch (e) {
-    console.error("Error during verification:", e.message || e);
-    if (e.response) console.error("Response data:", e.response.data);
+    try {
+      const { populateErrorTable } = require("../utils/logger");
+      populateErrorTable("error", "Error during verification", {
+        message: e && e.message ? e.message : e,
+        response: e.response ? e.response.data : undefined,
+      });
+    } catch (err) {
+      // fallback to process exit with error status
+    }
     process.exit(3);
   }
 }
