@@ -20,9 +20,8 @@ const addInterview = async (req, res) => {
     delete payload.candidatename;
     delete payload.idOfHost;
 
-    let data = new interview({
-      ...payload,
-    });
+    // Build a plain payload object for creation
+    const dataPayload = { ...payload };
     // store host as the authenticated user id (prefer id if present)
     // Resolve the authenticated user id into a form acceptable for MongoDB.
     // Sometimes middleware may attach a Buffer or a mongoose ObjectId; normalize
@@ -51,36 +50,46 @@ const addInterview = async (req, res) => {
       resolvedUserId = resolvedUserId._id;
     }
 
-    data.idOfHost = resolvedUserId;
+    dataPayload.idOfHost = resolvedUserId;
 
     // store hostname from authenticated user when available (keeps server authoritative)
     if (req.user && req.user.username) {
-      data.hostname = req.user.username;
+      dataPayload.hostname = req.user.username;
     } else if (payload.hostname) {
-      data.hostname = payload.hostname;
+      dataPayload.hostname = payload.hostname;
     }
 
     // Ensure interviewID exists; generate a short unique id if none provided
-    if (!payload.interviewID && !data.interviewID) {
-      data.interviewID = `${Date.now().toString(36)}-${Math.random()
+    if (!payload.interviewID && !dataPayload.interviewID) {
+      dataPayload.interviewID = `${Date.now().toString(36)}-${Math.random()
         .toString(36)
         .substr(2, 6)}`;
     } else if (payload.interviewID) {
-      data.interviewID = payload.interviewID;
+      dataPayload.interviewID = payload.interviewID;
     }
 
     // record startTime: allow caller to set it (ISO string) or default to now
     if (payload.startTime) {
       try {
-        data.startTime = new Date(payload.startTime);
+        dataPayload.startTime = new Date(payload.startTime);
       } catch (e) {
-        data.startTime = new Date();
+        dataPayload.startTime = new Date();
       }
     } else {
-      data.startTime = new Date();
+      dataPayload.startTime = new Date();
     }
 
-    let result = await dbService.createDocument(interview, data);
+    // If client provided an interviewID that already exists, return the existing doc
+    if (dataPayload.interviewID) {
+      const existing = await InterviewModel.findOne({
+        interviewID: dataPayload.interviewID,
+      });
+      if (existing) {
+        return res.ok({ data: existing });
+      }
+    }
+
+    let result = await dbService.createDocument(interview, dataPayload);
     return res.ok({ data: result });
   } catch (error) {
     if (error.name === "ValidationError") {
